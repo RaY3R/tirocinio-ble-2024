@@ -1,4 +1,4 @@
-""" wireshark.py
+""" aggregator.py
     ####
 """
 import queue
