@@ -72,15 +72,15 @@ This project is divided into two distinct parts. The first part is an aggregator
             <table>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/nrf_aggregator.py'>nrf_aggregator.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/wireshark_example.py'>wireshark_example.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/scapy_example.py'>scapy_example.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             </table>
             <details>
@@ -89,55 +89,55 @@ This project is divided into two distinct parts. The first part is an aggregator
                     <table>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Filelock.py'>Filelock.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/CaptureFiles.py'>CaptureFiles.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Packet.py'>Packet.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Pcap.py'>Pcap.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/version.py'>version.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Sniffer.py'>Sniffer.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Types.py'>Types.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/SnifferCollector.py'>SnifferCollector.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/UART.py'>UART.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Notifications.py'>Notifications.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Devices.py'>Devices.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Exceptions.py'>Exceptions.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     <tr>
                         <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/nrf/SnifferAPI/Logger.py'>Logger.py</a></b></td>
-                        <td><code>❯ REPLACE-ME</code></td>
+                        <td><code></code></td>
                     </tr>
                     </table>
                 </blockquote>
@@ -150,19 +150,19 @@ This project is divided into two distinct parts. The first part is an aggregator
             <table>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/hackrf/utils.py'>utils.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/hackrf/constants.py'>constants.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/hackrf/decoder.py'>decoder.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             <tr>
                 <td><b><a href='https://github.com/RaY3R/tirocinio-ble-2024/blob/master/hackrf/example.py'>example.py</a></b></td>
-                <td><code>❯ REPLACE-ME</code></td>
+                <td><code></code></td>
             </tr>
             </table>
         </blockquote>
