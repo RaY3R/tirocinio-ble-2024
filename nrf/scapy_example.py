@@ -6,8 +6,8 @@ import time
 
 if __name__ == "__main__":
     # setup logger
-    logging.basicConfig(level=logging.DEBUG)
     handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     logging.root.addHandler(handler)
     
@@ -21,7 +21,7 @@ if __name__ == "__main__":
         while True:
             packets = aggregator.get_packets()
             for p in packets:
-                scapy_packet = NRFS2_Packet(p)
+                scapy_packet = NRF2_Packet_Event(bytes(p.getList()))
                 print(scapy_packet.summary())
             time.sleep(0.1)
         

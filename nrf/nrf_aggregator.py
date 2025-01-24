@@ -5,7 +5,8 @@ import queue
 import socket
 import time
 
-from SnifferAPI import Sniffer, UART, Types
+from scapy.contrib.nrf_sniffer import *
+from SnifferAPI import Sniffer, UART, Types, Pcap
 from numpy import array_split
 from threading import Thread
 import logging
@@ -21,20 +22,23 @@ class NRFSniffersAggregator():
         self.packet_queue = queue.Queue()
         self.threads_ojects = []
         self.running = False
-        self._assign_channels()
+        self.sniffer_adv_channels = []
         
     def _assign_channels(self):
         adv_channels = array_split(self.adv_channels, len(self.ports))
-        for s in self.sniffers:
-            s.adv_channels = adv_channels.pop().tolist()
+        for i, s in enumerate(self.sniffers):
+            self.sniffer_adv_channels.append(adv_channels.pop().tolist())
 
     def setup(self):
         for p in self.ports:
             self.sniffers.append(Sniffer.Sniffer(portnum=p, baudrate=1000000, debug=False))
             
-        for s in self.sniffers:
+        self._assign_channels()
+        
+        for i, s in enumerate(self.sniffers):
             s.totalPackets = 0
-            s.setAdvHopSequence(s.adv_channels)
+            print(self.sniffer_adv_channels[i])
+            s.setAdvHopSequence(self.sniffer_adv_channels[i])
             s.setSupportedProtocolVersion(Types.PROTOVER_V3)
             s.start()
     
@@ -62,7 +66,7 @@ class NRFSniffersAggregator():
         self.running = True
         for sniffer in self.sniffers:
             t = Thread(target=self._loop, args=(sniffer,))
-            t.run()
+            t.start()
             self.threads_ojects.append(t)
             
         self.print_stats()
@@ -73,17 +77,17 @@ class NRFSniffersAggregator():
             s.doExit()
     
     def print_stats(self):
-        def print_job():
-            for s in self.sniffers:
-                logging.INFO(f"Sniffer '{s.portnum}' [{s.adv_channels}] - Total packets: {s.totalPackets}")
+        def print_job(self):
+            for i, s in enumerate(self.sniffers):
+                logging.INFO(f"Sniffer '{s.portnum}' [{self.sniffer_adv_channels[i]}] - Total packets: {s.totalPackets}")
             time.sleep(5)
         t = Thread(target=print_job, args=())
-        t.run()
+        t.start()
         t.join()
         
     
     def feed_wireshark(self, ip="127.0.0.1", port=5555):
-        def _wireshark():
+        def _wireshark(self):
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             while True:
                 # Recupera pacchetti dalla coda
@@ -92,7 +96,7 @@ class NRFSniffersAggregator():
                 packet = self.packet_queue.get()
                 if packet is None:  # Segnale per terminare il thread
                     continue
-                self.sock.sendto(bytes(packet), (ip, port))
+                self.sock.sendto(bytes(packet.getList()), (ip, port))
             self.sock.close()
-        t = Thread(target=_wireshark, args=())
+        t = Thread(target=_wireshark, args=(self,))
         t.start()
