@@ -1,6 +1,3 @@
-<p align="center">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Logo-unimore.png" align="center" width="30%">
-</p>
 <p align="center"><h1 align="center">TIROCINIO UNIMORE 23/24</h1></p>
 <p align="center">
     <em>Repository ufficiale del tirocinio interno personale</em>
