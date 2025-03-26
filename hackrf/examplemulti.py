@@ -1,4 +1,4 @@
-from decoder import HackrfDecoderBLE
+from decodermulti import HackrfDecoderBLE
 import logging
 import time
 
@@ -12,9 +12,8 @@ if __name__ == "__main__":
     
     # Crea e avvia il decoder
     ble_decoder = HackrfDecoderBLE()
-    ble_decoder.start_adv_hopping([37, 38, 39], interval=0.5)
-    #ble_decoder.set_channel(1)
-    ble_decoder.crcEnabled = True
+    ble_decoder.set_channel(20, debug=True) # frequenza centrale (nello spettro)
+    ble_decoder.crcEnabled = False
     ble_decoder.start()
     ble_decoder.sniff()
     print("Acquisizione BLE avviata. Premere Ctrl+C per interrompere.")

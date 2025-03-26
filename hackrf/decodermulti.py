@@ -22,7 +22,7 @@ class HackrfDecoderBLE(gr.top_block):
 
         # Configura HackRF come sorgente
         self.transition_width = transition_width = 300e3
-        self.sample_rate = sample_rate = 4e6
+        self.sample_rate = sample_rate = 20e6
         self.data_rate = data_rate = 1e6
         self.cutoff_freq = cutoff_freq = 1250e3
         self.ble_channel_spacing = ble_channel_spacing = 2e6
@@ -38,7 +38,7 @@ class HackrfDecoderBLE(gr.top_block):
         self.freq_offset = freq_offset = 0
         self.freq = freq = ble_base_freq+(ble_channel_spacing * ble_channel)
         
-        self.unpacked_to_packed = blocks.unpacked_to_packed_bb(1, gr.GR_LSB_FIRST)
+        #self.unpacked_to_packed = blocks.unpacked_to_packed_bb(1, gr.GR_LSB_FIRST)
         self.rtlsdr_source_0 = osmosdr.source("numchan=1 hackrf=0")
         self.rtlsdr_source_0.set_time_now(osmosdr.time_spec_t(time.time()), osmosdr.ALL_MBOARDS)
         self.rtlsdr_source_0.set_sample_rate(sample_rate)
@@ -52,33 +52,50 @@ class HackrfDecoderBLE(gr.top_block):
         self.rtlsdr_source_0.set_bb_gain(0, 0)
         self.rtlsdr_source_0.set_antenna('', 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
-
-        self.freq_xlating_fir_filter_lp = filter.freq_xlating_fir_filter_ccc(1, lowpass_filter, (-freq_offset), sample_rate)
-        self.simple_squelch_0 = analog.simple_squelch_cc(-100, 0.1)
-        self.digital_gfsk_demod_0 = digital.gfsk_demod(
-            samples_per_symbol=gmsk_sps,
-            sensitivity=((numpy.pi*2)/gmsk_sps),
-            gain_mu=gmsk_gain_mu,
-            mu=gmsk_mu,
-            omega_relative_limit=gmsk_omega_limit,
-            freq_error=0.0,
-            verbose=False,
-            log=False
+        
+        self.pfb_channelizer = filter.pfb.channelizer_ccf(
+            numchans=10,
+            taps=firdes.low_pass(1, sample_rate, cutoff_freq, transition_width),
+            oversample_rate=1.0
         )
         
-        self.sink = blocks.vector_sink_b()
+        self.connect((self.rtlsdr_source_0, 0), (self.pfb_channelizer, 0))
         
-        self.connect((self.simple_squelch_0, 0), (self.freq_xlating_fir_filter_lp, 0))
-        self.connect((self.digital_gfsk_demod_0, 0), (self.unpacked_to_packed, 0))
-        self.connect((self.freq_xlating_fir_filter_lp, 0), (self.digital_gfsk_demod_0, 0))
-        self.connect((self.rtlsdr_source_0, 0), (self.simple_squelch_0, 0))
-        self.connect((self.unpacked_to_packed, 0), (self.sink, 0))
+        self.demod_blocks = []
+        self.unpacked_blocks = []
+        self.sink_blocks = []
+
+        for i in range(10):
+            
+            demod = digital.gfsk_demod(
+                samples_per_symbol=gmsk_sps,
+                sensitivity=((numpy.pi*2)/gmsk_sps),
+                gain_mu=gmsk_gain_mu,
+                mu=gmsk_mu,
+                omega_relative_limit=gmsk_omega_limit,
+                freq_error=0.0,
+                verbose=False,
+                log=False
+            )
+            self.demod_blocks.append(demod)
+            
+            unpacked = blocks.unpacked_to_packed_bb(1, gr.GR_LSB_FIRST)
+            self.unpacked_blocks.append(unpacked)
+            
+            sink = blocks.vector_sink_b()
+            self.sink_blocks.append(sink)
+            
+            self.connect((self.pfb_channelizer, i), (demod, 0))
+            self.connect((demod, 0), (unpacked, 0))
+            self.connect((unpacked, 0), (sink, 0))
+        
         
     def get_data(self):
         data = b''
         while len(data) < 1024:
-            data += bytes(self.sink.data())
-            self.sink.reset()
+            data += bytes([b for sink in self.sink_blocks for b in sink.data()])
+            for sink in self.sink_blocks:
+                sink.reset()
         return data
 
     def set_channel(self, channel, debug=True):
@@ -186,8 +203,7 @@ class HackrfDecoderBLE(gr.top_block):
         def _sniff():
             previous_incomplete_packet = None
             while True:
-                temp_buffer = bytes(self.sink.data())
-                self.sink.reset()
+                temp_buffer = self.get_data()
                 
                 packets, previous_incomplete_packet = self.parse_ble_packet(temp_buffer, previous_incomplete_packet)
                 for p in packets:
