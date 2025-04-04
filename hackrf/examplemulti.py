@@ -12,7 +12,7 @@ if __name__ == "__main__":
     
     # Crea e avvia il decoder
     ble_decoder = HackrfDecoderBLE()
-    ble_decoder.set_channel(20, debug=True) # frequenza centrale (nello spettro)
+    ble_decoder.set_channel(0, debug=True) 
     ble_decoder.crcEnabled = False
     ble_decoder.start()
     ble_decoder.sniff()
@@ -21,8 +21,6 @@ if __name__ == "__main__":
     
     try:
         while True:
-            for pkt in ble_decoder.get_packets():
-                print(pkt.summary())
             time.sleep(0.1)
     
     except Exception as e:

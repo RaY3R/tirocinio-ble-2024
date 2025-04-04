@@ -68,10 +68,10 @@ class HackrfDecoderBLE(gr.top_block):
         
         self.sink = blocks.vector_sink_b()
         
-        self.connect((self.simple_squelch_0, 0), (self.freq_xlating_fir_filter_lp, 0))
-        self.connect((self.digital_gfsk_demod_0, 0), (self.unpacked_to_packed, 0))
-        self.connect((self.freq_xlating_fir_filter_lp, 0), (self.digital_gfsk_demod_0, 0))
         self.connect((self.rtlsdr_source_0, 0), (self.simple_squelch_0, 0))
+        self.connect((self.simple_squelch_0, 0), (self.freq_xlating_fir_filter_lp, 0))
+        self.connect((self.freq_xlating_fir_filter_lp, 0), (self.digital_gfsk_demod_0, 0))
+        self.connect((self.digital_gfsk_demod_0, 0), (self.unpacked_to_packed, 0))
         self.connect((self.unpacked_to_packed, 0), (self.sink, 0))
         
     def get_data(self):

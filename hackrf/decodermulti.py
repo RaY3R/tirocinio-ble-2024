@@ -2,7 +2,7 @@ import socket
 from gnuradio import gr, blocks, filter, digital, analog
 from gnuradio.filter import firdes
 import osmosdr
-from scapy.layers.bluetooth4LE import BTLE
+from scapy.layers.bluetooth4LE import BTLE, BTLE_RF
 import time
 import numpy 
 import queue
@@ -53,13 +53,16 @@ class HackrfDecoderBLE(gr.top_block):
         self.rtlsdr_source_0.set_antenna('', 0)
         self.rtlsdr_source_0.set_bandwidth(0, 0)
         
+        self.simple_squelch_0 = analog.simple_squelch_cc(-100, 0.1)
+        
         self.pfb_channelizer = filter.pfb.channelizer_ccf(
             numchans=10,
-            taps=firdes.low_pass(1, sample_rate, cutoff_freq, transition_width),
+            taps=lowpass_filter,
             oversample_rate=1.0
         )
         
-        self.connect((self.rtlsdr_source_0, 0), (self.pfb_channelizer, 0))
+        self.connect((self.rtlsdr_source_0, 0), (self.simple_squelch_0, 0))
+        self.connect((self.simple_squelch_0, 0), (self.pfb_channelizer, 0))
         
         self.demod_blocks = []
         self.unpacked_blocks = []
@@ -68,7 +71,7 @@ class HackrfDecoderBLE(gr.top_block):
         for i in range(10):
             
             demod = digital.gfsk_demod(
-                samples_per_symbol=gmsk_sps,
+                samples_per_symbol=gmsk_sps/10,
                 sensitivity=((numpy.pi*2)/gmsk_sps),
                 gain_mu=gmsk_gain_mu,
                 mu=gmsk_mu,
@@ -91,12 +94,42 @@ class HackrfDecoderBLE(gr.top_block):
         
         
     def get_data(self):
-        data = b''
-        while len(data) < 1024:
-            data += bytes([b for sink in self.sink_blocks for b in sink.data()])
-            for sink in self.sink_blocks:
-                sink.reset()
-        return data
+        channel_data = []
+        for i, sink in enumerate(self.sink_blocks):
+            # Ottiene i dati da ciascun sink e li associa all'indice del canale
+            data = b''
+            while len(data) < 1024:
+                data += bytes(sink.data())
+                
+            if data:
+                # Calcola il canale BLE fisico corrispondente a questo canale del channelizer
+                ble_channel = self.calculate_ble_channel(i)
+                channel_data.append((data, ble_channel))
+            sink.reset()
+        return channel_data
+
+    def calculate_ble_channel(self, channelizer_index):
+
+        # La frequenza centrale attualmente impostata
+        center_freq = self.freq
+        
+        # Larghezza di banda totale coperta dal channelizer
+        total_bandwidth = self.sample_rate
+        
+        # Larghezza di banda per canale del channelizer
+        channel_bandwidth = total_bandwidth / 10  # 10 canali nel channelizer
+        
+        # Calcola la frequenza centrale di questo canale del channelizer
+        # L'indice 0 è il canale più a sinistra (frequenza più bassa)
+        channel_center_freq = center_freq - (total_bandwidth/2) + (channel_bandwidth/2) + (channelizer_index * channel_bandwidth)
+        
+        # Trova il canale BLE più vicino a questa frequenza
+        nearest_ble_channel = round((channel_center_freq - self.ble_base_freq) / self.ble_channel_spacing)
+        
+        # Limita al range valido di canali BLE (0-39)
+        nearest_ble_channel = max(0, min(39, nearest_ble_channel))
+        
+        return nearest_ble_channel
 
     def set_channel(self, channel, debug=True):
         
@@ -132,7 +165,7 @@ class HackrfDecoderBLE(gr.top_block):
                     time.sleep(interval)
         threading.Thread(target=_adv_hopping).start()
         
-    def parse_ble_packet(self, buffer, incomplete_packet=None):
+    def parse_ble_packet(self, buffer, incomplete_packet=None, channel=None):
         """
         Funzione per analizzare i pacchetti BLE in un buffer, gestendo i frammenti.
         :param buffer: Dati ricevuti nel buffer corrente.
@@ -162,15 +195,14 @@ class HackrfDecoderBLE(gr.top_block):
                 access_address = int.from_bytes(buffer[start_index:start_index+4], byteorder='little')
                 start_index += 4 # skip access address
                 
-                if access_address == 0xaf9a9259:
-                    print("X")
+                whitening_channel = self.get_physical_channel(channel) if channel is not None else self.get_physical_channel(self.ble_channel)
                 
                 try:
                     if access_address == BLE_ACCESS_ADDR_ADV:
-                        packet_header = dewhitening(buffer[start_index:start_index+2], self.get_physical_channel(self.ble_channel))
+                        packet_header = dewhitening(buffer[start_index:start_index+2], whitening_channel)
                         packet_length = packet_header[1] & 0x3f
                     else:
-                        packet_header = dewhitening(buffer[start_index:start_index+2], self.get_physical_channel(self.ble_channel))
+                        packet_header = dewhitening(buffer[start_index:start_index+2], whitening_channel)
                         packet_length = packet_header[1]
                 except Exception as e:
                     continue
@@ -179,7 +211,7 @@ class HackrfDecoderBLE(gr.top_block):
                 if (2 + packet_length + 3) > len(buffer[start_index:]):
                     return packets, buffer[packet_start:]
                 
-                packet_data = dewhitening(buffer[start_index:start_index+packet_length+3+2], self.get_physical_channel(self.ble_channel))
+                packet_data = dewhitening(buffer[start_index:start_index+packet_length+3+2], whitening_channel)
                 
                 if self.crcEnabled:
                     crc_data = crc(packet_data[:-3], packet_length + 2, self.crcInit)
@@ -194,21 +226,32 @@ class HackrfDecoderBLE(gr.top_block):
         
         return packets, None
     
-    def process_packet(self, packet):
+    def process_packet(self, packet, channel):
         scapy_packet = BTLE(packet)
         self.total_packets += 1
         self.packet_queue.put(scapy_packet)
 
     def sniff(self):
         def _sniff():
-            previous_incomplete_packet = None
+            incomplete_packets = [None] * 10  # Un pacchetto incompleto per ogni canale del channelizer
+            
             while True:
-                temp_buffer = self.get_data()
+                channel_data = self.get_data()
                 
-                packets, previous_incomplete_packet = self.parse_ble_packet(temp_buffer, previous_incomplete_packet)
-                for p in packets:
-                    self.process_packet(p)
-                
+                for data, ble_channel in channel_data:
+                    if not data:
+                        continue
+                    
+                    #print(f"Channel {self.get_physical_channel(ble_channel)} - {len(data)} bytes")
+                    packets, incomplete_packets[ble_channel] = self.parse_ble_packet(
+                        data, 
+                        incomplete_packets[ble_channel], 
+                        ble_channel  # Passa il canale al parser
+                    )
+                    
+                    for p in packets:
+                        self.process_packet(p, self.get_physical_channel(ble_channel))
+        
         threading.Thread(target=_sniff).start()
             
     def get_packets(self) -> list:
@@ -220,6 +263,7 @@ class HackrfDecoderBLE(gr.top_block):
     
     def feed_wiresharsk(self, ip='127.0.0.1', port=5555):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
         while True:
             # Recupera pacchetti dalla coda
             packet = self.packet_queue.get()
